@@ -140,15 +140,13 @@ dmypy.json
 *.pth
 *.pt
 *.ckpt
-model/saved_model/
 model/results/
-saved_model/
 results/
 checkpoints/
 logs/
 
 # Data files (keep small samples, ignore large datasets)
-data/*.csv
+
 data/*.tsv
 data/*.json
 data/*.xlsx

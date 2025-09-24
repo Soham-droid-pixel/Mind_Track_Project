@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 _model = None
 _tokenizer = None
 
-def load_model_and_tokenizer(model_path="./model/saved_model"):
+def load_model_and_tokenizer(model_path="./saved_model"):
     """
     Load the saved model and tokenizer from the specified path.
     
@@ -35,8 +35,16 @@ def load_model_and_tokenizer(model_path="./model/saved_model"):
         
         # Check if model path exists
         if not os.path.exists(model_path):
-            logger.warning(f"Model path {model_path} does not exist. Using fallback model.")
-            return load_fallback_model()
+            # Try alternative paths
+            alternative_paths = ["./model/saved_model", "./model/results"]
+            for alt_path in alternative_paths:
+                if os.path.exists(alt_path):
+                    logger.info(f"Model not found at {model_path}, trying {alt_path}")
+                    model_path = alt_path
+                    break
+            else:
+                logger.warning(f"Model path {model_path} does not exist. Using fallback model.")
+                return load_fallback_model()
         
         # Load tokenizer and model
         tokenizer = AutoTokenizer.from_pretrained(model_path)

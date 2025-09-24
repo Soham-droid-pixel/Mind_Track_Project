@@ -1,0 +1,22 @@
+{
+  "model_checkpoint": "distilbert-base-uncased",
+  "max_length": 256,
+  "final_eval": {
+    "eval_loss": 0.13411274552345276,
+    "eval_accuracy": 0.9713,
+    "eval_f1": 0.9712976231561735,
+    "eval_f1_macro": 0.9712976231561736,
+    "eval_precision_normal": 0.9628756629345905,
+    "eval_recall_normal": 0.9804,
+    "eval_f1_normal": 0.9715588147854524,
+    "eval_precision_risk": 0.9800366673456916,
+    "eval_recall_risk": 0.9622,
+    "eval_f1_risk": 0.9710364315268948,
+    "eval_runtime": 38.6977,
+    "eval_samples_per_second": 258.413,
+    "eval_steps_per_second": 16.151,
+    "epoch": 4.0
+  },
+  "training_samples": 40000,
+  "validation_samples": 10000
+}

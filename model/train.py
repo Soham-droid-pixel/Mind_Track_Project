@@ -1,13 +1,14 @@
 """
-MindTrack Model Training Script
-This script trains a DistilBERT model for mental health sentiment analysis.
+MindTrack Model Training Script - Robust Version
+This script trains a DistilBERT model for mental health sentiment analysis
+with best practices to prevent overfitting and ensure stable training.
 """
 
 import os
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support
 import torch
 from torch.utils.data import Dataset
 from transformers import (
@@ -15,18 +16,31 @@ from transformers import (
     AutoModelForSequenceClassification,
     TrainingArguments, 
     Trainer,
-    DataCollatorWithPadding
+    DataCollatorWithPadding,
+    EarlyStoppingCallback
 )
 import logging
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+# Set up logging with more detailed format
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 class MentalHealthDataset(Dataset):
-    """Custom dataset class for mental health text classification."""
+    """Custom dataset class for mental health text classification with improved handling."""
     
-    def __init__(self, texts, labels, tokenizer, max_length=512):
+    def __init__(self, texts, labels, tokenizer, max_length=256):
+        """
+        Initialize dataset.
+        
+        Args:
+            texts: List of text strings
+            labels: List of corresponding labels
+            tokenizer: HuggingFace tokenizer
+            max_length: Maximum sequence length (reduced from 512 to prevent overfitting)
+        """
         self.texts = texts
         self.labels = labels
         self.tokenizer = tokenizer
@@ -39,7 +53,7 @@ class MentalHealthDataset(Dataset):
         text = str(self.texts[idx])
         label = self.labels[idx]
         
-        # Tokenize the text
+        # Tokenize with truncation and padding
         encoding = self.tokenizer(
             text,
             truncation=True,
@@ -189,7 +203,7 @@ def create_sample_data():
 
 def compute_metrics(eval_pred):
     """
-    Compute accuracy and F1-score for model evaluation.
+    Compute comprehensive metrics for model evaluation.
     
     Args:
         eval_pred: Tuple containing predictions and labels
@@ -200,16 +214,36 @@ def compute_metrics(eval_pred):
     predictions, labels = eval_pred
     predictions = np.argmax(predictions, axis=1)
     
+    # Calculate comprehensive metrics
     accuracy = accuracy_score(labels, predictions)
     f1 = f1_score(labels, predictions, average='weighted')
     
+    # Calculate per-class metrics
+    precision, recall, f1_per_class, support = precision_recall_fscore_support(
+        labels, predictions, average=None
+    )
+    
+    # Calculate macro F1 for balanced evaluation
+    f1_macro = f1_score(labels, predictions, average='macro')
+    
     return {
         'accuracy': accuracy,
-        'f1': f1
+        'f1': f1,
+        'f1_macro': f1_macro,
+        'precision_normal': precision[0] if len(precision) > 0 else 0.0,
+        'recall_normal': recall[0] if len(recall) > 0 else 0.0,
+        'f1_normal': f1_per_class[0] if len(f1_per_class) > 0 else 0.0,
+        'precision_risk': precision[1] if len(precision) > 1 else 0.0,
+        'recall_risk': recall[1] if len(recall) > 1 else 0.0,
+        'f1_risk': f1_per_class[1] if len(f1_per_class) > 1 else 0.0,
     }
 
 def main():
-    """Main training function."""
+    """Main training function with robust hyperparameters to prevent overfitting."""
+    
+    # Set random seeds for reproducibility
+    torch.manual_seed(42)
+    np.random.seed(42)
     
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -217,6 +251,8 @@ def main():
     if torch.cuda.is_available():
         logger.info(f"GPU: {torch.cuda.get_device_name(0)}")
         logger.info(f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+        # Clear GPU cache
+        torch.cuda.empty_cache()
     
     # Define model checkpoint
     model_checkpoint = 'distilbert-base-uncased'
@@ -229,66 +265,115 @@ def main():
     
     X_train, X_val, y_train, y_val = load_and_preprocess_data(data_path)
     
+    # Log dataset statistics
+    logger.info(f"Training samples: {len(X_train)}")
+    logger.info(f"Validation samples: {len(X_val)}")
+    logger.info(f"Training class distribution: {np.bincount(y_train)}")
+    logger.info(f"Validation class distribution: {np.bincount(y_val)}")
+    
     # Load tokenizer
     logger.info("Loading tokenizer...")
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
     
-    # Create datasets
-    train_dataset = MentalHealthDataset(X_train, y_train, tokenizer)
-    val_dataset = MentalHealthDataset(X_val, y_val, tokenizer)
+    # Add padding token if not present
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
     
-    # Load pre-trained model with proper initialization
+    # Create datasets with proper max length
+    max_length = 256  # Reduced from 512 to prevent overfitting to very long sequences
+    train_dataset = MentalHealthDataset(X_train, y_train, tokenizer, max_length=max_length)
+    val_dataset = MentalHealthDataset(X_val, y_val, tokenizer, max_length=max_length)
+    
+    # Load pre-trained model with proper configuration
     logger.info("Loading pre-trained model...")
     model = AutoModelForSequenceClassification.from_pretrained(
         model_checkpoint,
         num_labels=2,
         id2label={0: "NORMAL", 1: "RISK"},
         label2id={"NORMAL": 0, "RISK": 1},
-        problem_type="single_label_classification",  # Explicit problem type
-        ignore_mismatched_sizes=True  # Allow classifier head reinitialization
+        problem_type="single_label_classification",
+        # Note: DistilBERT dropout is configured in the config, not as init parameters
     )
     
-    # Reinitialize the classifier head for better learning
+    # Initialize classifier head with smaller standard deviation for stability
     if hasattr(model, 'classifier'):
-        torch.nn.init.normal_(model.classifier.weight, std=0.02)
+        torch.nn.init.normal_(model.classifier.weight, std=0.01)  # Smaller std
         torch.nn.init.zeros_(model.classifier.bias)
-        logger.info("Reinitialized classifier head")
+        logger.info("Reinitialized classifier head with smaller variance")
     
     model.to(device)
     
-    # Move model to GPU if available
-    model.to(device)
+    # Data collator with dynamic padding
+    data_collator = DataCollatorWithPadding(tokenizer=tokenizer, return_tensors="pt")
     
-    # Data collator
-    data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+    # Calculate optimal batch size and steps
+    batch_size = 16 if device.type == 'cuda' else 8
+    total_train_samples = len(train_dataset)
+    steps_per_epoch = total_train_samples // batch_size
     
-    # Define training arguments optimized for better learning
+    logger.info(f"Batch size: {batch_size}")
+    logger.info(f"Steps per epoch: {steps_per_epoch}")
+    
+    # CRITICAL: Robust TrainingArguments to prevent overfitting
     training_args = TrainingArguments(
+        # Output and logging
         output_dir='./results',
-        num_train_epochs=3,  # Increased epochs for better learning
-        per_device_train_batch_size=8 if device.type == 'cuda' else 4,  # Smaller batch for better gradients
-        per_device_eval_batch_size=8 if device.type == 'cuda' else 4,
-        warmup_steps=500,
-        weight_decay=0.01,
-        learning_rate=5e-5,  # Explicit learning rate
         logging_dir='./logs',
         logging_steps=50,
-        evaluation_strategy="steps",
-        eval_steps=200,
-        save_strategy="steps",
-        save_steps=200,
-        load_best_model_at_end=True,
-        metric_for_best_model="f1",
-        greater_is_better=True,
-        report_to=None,  # Disable wandb logging
-        fp16=device.type == 'cuda',  # Enable mixed precision for GPU
+        
+        # Training schedule - KEY FOR PREVENTING OVERFITTING
+        num_train_epochs=4,  # Moderate number of epochs
+        learning_rate=2e-5,  # Conservative learning rate for stable training
+        lr_scheduler_type='cosine',  # Smooth decay prevents abrupt changes
+        warmup_ratio=0.1,  # Warm up over first 10% of training
+        
+        # Batch sizes
+        per_device_train_batch_size=batch_size,
+        per_device_eval_batch_size=batch_size,
+        
+        # Regularization - CRITICAL FOR GENERALIZATION
+        weight_decay=0.01,  # L2 regularization
+        max_grad_norm=1.0,  # Gradient clipping prevents exploding gradients
+        
+        # Evaluation and saving - PREVENTS OVERFITTING
+        evaluation_strategy="epoch",  # Evaluate at end of each epoch
+        save_strategy="epoch",  # Save at end of each epoch
+        load_best_model_at_end=True,  # CRITICAL: Load best model, not last
+        metric_for_best_model="f1_macro",  # Use macro F1 for balanced evaluation
+        greater_is_better=True,  # Higher F1 is better
+        
+        # Early stopping patience
+        save_total_limit=3,  # Keep only best 3 checkpoints
+        
+        # Performance optimizations
+        fp16=device.type == 'cuda',  # Mixed precision for GPU
         dataloader_num_workers=2 if device.type == 'cuda' else 0,
-        gradient_accumulation_steps=1,  # No gradient accumulation for now
-        save_total_limit=3,
-        seed=42,  # Set seed for reproducibility
+        dataloader_pin_memory=device.type == 'cuda',
+        
+        # Reproducibility
+        seed=42,
+        data_seed=42,
+        
+        # Disable external logging
+        report_to=None,
+        
+        # Additional stability settings
+        gradient_accumulation_steps=1,
+        eval_accumulation_steps=1,
+        prediction_loss_only=False,
+        
+        # Memory management
+        dataloader_drop_last=False,
+        remove_unused_columns=True,
     )
     
-    # Create trainer
+    # Early stopping callback for additional overfitting protection
+    early_stopping_callback = EarlyStoppingCallback(
+        early_stopping_patience=2,  # Stop if no improvement for 2 epochs
+        early_stopping_threshold=0.001  # Minimum improvement threshold
+    )
+    
+    # Create trainer with comprehensive configuration
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -297,32 +382,129 @@ def main():
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
+        callbacks=[early_stopping_callback],  # Add early stopping
     )
     
+    # Log training configuration
+    logger.info("=" * 60)
+    logger.info("TRAINING CONFIGURATION")
+    logger.info("=" * 60)
+    logger.info(f"Model: {model_checkpoint}")
+    logger.info(f"Training samples: {len(train_dataset)}")
+    logger.info(f"Validation samples: {len(val_dataset)}")
+    logger.info(f"Max epochs: {training_args.num_train_epochs}")
+    logger.info(f"Learning rate: {training_args.learning_rate}")
+    logger.info(f"Batch size: {training_args.per_device_train_batch_size}")
+    logger.info(f"Weight decay: {training_args.weight_decay}")
+    logger.info(f"Max sequence length: {max_length}")
+    logger.info("=" * 60)
+    
     # Train the model
-    logger.info("Starting training...")
-    logger.info(f"Training on {len(train_dataset)} samples")
-    logger.info(f"Validation on {len(val_dataset)} samples")
+    logger.info("🚀 Starting training with overfitting prevention...")
     
-    trainer.train()
+    try:
+        trainer.train()
+        logger.info("✅ Training completed successfully!")
+        
+        # Get final evaluation results
+        logger.info("📊 Evaluating best model...")
+        final_eval = trainer.evaluate()
+        
+        logger.info("=" * 60)
+        logger.info("FINAL EVALUATION RESULTS")
+        logger.info("=" * 60)
+        for key, value in final_eval.items():
+            if isinstance(value, float):
+                logger.info(f"{key}: {value:.4f}")
+            else:
+                logger.info(f"{key}: {value}")
+        logger.info("=" * 60)
+        
+    except Exception as e:
+        logger.error(f"❌ Training failed: {str(e)}")
+        return False
     
-    # Save the model and tokenizer
+    # Save the best model and tokenizer
     save_directory = "./saved_model"
-    logger.info(f"Saving model to {save_directory}")
+    logger.info(f"💾 Saving best model to {save_directory}")
     
     # Create directory if it doesn't exist
     os.makedirs(save_directory, exist_ok=True)
     
-    # Save model and tokenizer
-    model.save_pretrained(save_directory)
-    tokenizer.save_pretrained(save_directory)
-    
-    logger.info("Training completed successfully!")
-    
-    # Evaluate the model
-    logger.info("Evaluating model...")
-    eval_results = trainer.evaluate()
-    logger.info(f"Evaluation results: {eval_results}")
+    try:
+        # Save model and tokenizer
+        model.save_pretrained(save_directory)
+        tokenizer.save_pretrained(save_directory)
+        
+        # Save training metadata
+        metadata = {
+            'model_checkpoint': model_checkpoint,
+            'max_length': max_length,
+            'final_eval': final_eval,
+            'training_samples': len(train_dataset),
+            'validation_samples': len(val_dataset)
+        }
+        
+        import json
+        with open(os.path.join(save_directory, 'training_metadata.json'), 'w') as f:
+            json.dump(metadata, f, indent=2, default=str)
+        
+        logger.info("✅ Model and metadata saved successfully!")
+        
+        # Final verification - test the saved model
+        logger.info("🧪 Verifying saved model...")
+        test_model_loading(save_directory)
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Error saving model: {str(e)}")
+        return False
 
+def test_model_loading(model_path):
+    """Test that the saved model loads correctly and produces reasonable outputs."""
+    try:
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer
+        import torch
+        
+        # Load saved model
+        model = AutoModelForSequenceClassification.from_pretrained(model_path)
+        tokenizer = AutoTokenizer.from_pretrained(model_path)
+        model.eval()
+        
+        # Test with sample texts
+        test_texts = [
+            "I'm feeling really happy and optimistic about life!",
+            "I can't see any point in living anymore, everything is hopeless"
+        ]
+        
+        logger.info("Testing model with sample texts:")
+        for text in test_texts:
+            inputs = tokenizer(text, return_tensors='pt', truncation=True, max_length=256)
+            
+            with torch.no_grad():
+                outputs = model(**inputs)
+                logits = outputs.logits
+                probabilities = torch.softmax(logits, dim=-1)
+                prediction = torch.argmax(probabilities, dim=-1).item()
+                confidence = probabilities[0][prediction].item()
+            
+            logger.info(f"Text: {text[:50]}...")
+            logger.info(f"Prediction: {prediction} ({'RISK' if prediction == 1 else 'NORMAL'})")
+            logger.info(f"Confidence: {confidence:.4f}")
+            logger.info(f"Logits: {logits.tolist()[0]}")
+            logger.info("-" * 40)
+        
+        logger.info("✅ Model verification completed successfully!")
+        
+    except Exception as e:
+        logger.error(f"❌ Model verification failed: {str(e)}")
+        
 if __name__ == "__main__":
-    main()
+    success = main()
+    if success:
+        logger.info("🎉 Training pipeline completed successfully!")
+        logger.info("You can now use the model with: python test_model.py")
+    else:
+        logger.error("❌ Training pipeline failed!")
+        exit(1)
