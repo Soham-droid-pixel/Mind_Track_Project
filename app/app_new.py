@@ -10,6 +10,8 @@ from datetime import datetime
 import pandas as pd
 import sys
 import os
+import plotly.express as px
+import plotly.graph_objects as go
 
 # Add the current directory to Python path for local imports
 current_dir = os.path.dirname(os.path.abspath(__file__))

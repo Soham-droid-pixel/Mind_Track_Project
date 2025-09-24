@@ -182,6 +182,79 @@ def explain_text(explainer, text, predictor_fn, num_features=10):
         logger.error(f"Error generating explanation: {str(e)}")
         return None
 
+def format_lime_explanation(explanation, prediction_label):
+    """
+    Format LIME explanation into user-friendly format.
+    
+    Args:
+        explanation: LIME explanation object
+        prediction_label: The predicted label
+        
+    Returns:
+        dict: Formatted explanation with positive and negative influences
+    """
+    if explanation is None:
+        return None
+    
+    # Get the explanation for the predicted class
+    class_idx = 1 if prediction_label == "Risk Detected" else 0
+    exp_list = explanation.as_list(label=class_idx)
+    
+    # Separate positive and negative influences
+    positive_words = []
+    negative_words = []
+    
+    for word, importance in exp_list:
+        if importance > 0:
+            positive_words.append({
+                'word': word,
+                'importance': importance,
+                'description': f"'{word}' increases {prediction_label.lower()} prediction"
+            })
+        else:
+            negative_words.append({
+                'word': word,
+                'importance': abs(importance),
+                'description': f"'{word}' decreases {prediction_label.lower()} prediction"
+            })
+    
+    # Sort by importance
+    positive_words.sort(key=lambda x: x['importance'], reverse=True)
+    negative_words.sort(key=lambda x: x['importance'], reverse=True)
+    
+    return {
+        'positive_influences': positive_words[:5],  # Top 5 positive influences
+        'negative_influences': negative_words[:5],  # Top 5 negative influences
+        'prediction': prediction_label,
+        'explanation_summary': _get_explanation_summary(positive_words, negative_words, prediction_label)
+    }
+
+def _get_explanation_summary(positive_words, negative_words, prediction_label):
+    """Generate a human-readable summary of the explanation."""
+    if not positive_words and not negative_words:
+        return "No significant word influences found."
+    
+    summary = []
+    
+    if prediction_label == "Risk Detected":
+        if positive_words:
+            top_risk_words = [w['word'] for w in positive_words[:3]]
+            summary.append(f"🚨 The model detected risk primarily due to words like: {', '.join(top_risk_words)}")
+        
+        if negative_words:
+            top_safe_words = [w['word'] for w in negative_words[:2]]
+            summary.append(f"✅ However, words like '{', '.join(top_safe_words)}' suggest some positive elements.")
+    else:
+        if positive_words:
+            top_normal_words = [w['word'] for w in positive_words[:3]]
+            summary.append(f"✅ The model classified this as normal due to words like: {', '.join(top_normal_words)}")
+        
+        if negative_words:
+            top_concern_words = [w['word'] for w in negative_words[:2]]
+            summary.append(f"⚠️ Words like '{', '.join(top_concern_words)}' showed some concerning signals.")
+    
+    return " ".join(summary)
+
 def create_lime_explainer():
     """
     Create and configure a LIME text explainer.
