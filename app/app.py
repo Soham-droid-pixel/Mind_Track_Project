@@ -70,26 +70,11 @@ h1, h2, h3, h4, h5, h6, p, span, div {
 
 .main-header {
     font-size: 3.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #e0e6ed;
     text-align: center;
     margin-bottom: 1rem;
     font-weight: 800;
     text-shadow: 0 4px 8px rgba(0,0,0,0.3);
-    position: relative;
-}
-
-.main-header::before {
-    content: "🧠";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 3.5rem;
-    z-index: -1;
-    opacity: 0.2;
 }
 
 .subtitle {
@@ -441,6 +426,30 @@ h1, h2, h3, h4, h5, h6, p, span, div {
 .stMarkdown p {
     color: #a0aec0 !important;
 }
+
+/* Tab text color fixes */
+.stTabs [data-baseweb="tab"] span {
+    color: #e0e6ed !important;
+}
+
+.stTabs [aria-selected="true"] span {
+    color: white !important;
+}
+
+/* Label text fixes */
+label {
+    color: #e0e6ed !important;
+}
+
+/* Metric labels */
+.css-1xarl3l {
+    color: #e0e6ed !important;
+}
+
+/* Column headers and general text */
+.css-10trblm, .css-1dp5vir {
+    color: #e0e6ed !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -496,7 +505,7 @@ def display_prediction_results(text, prediction_label, confidence, explanation_d
     if explanation_data:
         st.markdown('<div class="explanation-box">', unsafe_allow_html=True)
         st.markdown('<div class="explanation-content">', unsafe_allow_html=True)
-        st.markdown("### 🔍 AI Explanation")
+        st.markdown('<div style="font-size: 1.4rem; font-weight: 600; color: #667eea; margin-bottom: 15px;">🔍 AI Explanation</div>', unsafe_allow_html=True)
         
         # Summary
         st.markdown(f"**{explanation_data['explanation_summary']}**")
@@ -524,10 +533,10 @@ def single_text_analysis_tab():
     """Enhanced single text analysis tab."""
     st.markdown('''
     <div style="text-align: center; margin-bottom: 30px;">
-        <h2 style="font-size: 2.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px;">
+        <div style="font-size: 2.5rem; color: #e0e6ed; margin-bottom: 10px; font-weight: 600;">
             📝 Single Text Analysis
-        </h2>
-        <p style="font-size: 1.2rem; color: #6c757d; margin: 0;">
+        </div>
+        <p style="font-size: 1.2rem; color: #a0aec0; margin: 0;">
             Analyze any text for mental health sentiment indicators
         </p>
     </div>
@@ -544,7 +553,7 @@ def single_text_analysis_tab():
     # Quick examples with improved styling
     st.markdown("""
     <div class="quick-examples">
-        <h4>💡 Quick Examples</h4>
+        <div style="color: white !important; margin-bottom: 15px; font-size: 1.3em; font-weight: 600;">💡 Quick Examples</div>
         <p style="margin-bottom: 20px; opacity: 0.9;">Click any example below to test it instantly!</p>
     </div>
     """, unsafe_allow_html=True)
@@ -598,7 +607,16 @@ def single_text_analysis_tab():
 
 def reddit_monitoring_tab():
     """Enhanced Reddit monitoring tab."""
-    st.markdown('<h2 style="text-align: center;">📱 Live Reddit Monitoring</h2>', unsafe_allow_html=True)
+    st.markdown('''
+    <div style="text-align: center; margin-bottom: 30px;">
+        <div style="font-size: 2.5rem; color: #e0e6ed; margin-bottom: 10px; font-weight: 600;">
+            📱 Live Reddit Monitoring
+        </div>
+        <p style="font-size: 1.2rem; color: #a0aec0; margin: 0;">
+            Monitor mental health discussions in real-time from subreddits
+        </p>
+    </div>
+    ''', unsafe_allow_html=True)
     
     # Load model
     model, tokenizer = load_model_cached()
@@ -610,7 +628,7 @@ def reddit_monitoring_tab():
     # Reddit API configuration
     st.markdown("""
     <div class="info-card">
-        <h4>🔧 Reddit API Configuration</h4>
+        <div style="color: #667eea; font-size: 1.3rem; font-weight: 600; margin-bottom: 10px;">🔧 Reddit API Configuration</div>
         <p>Monitor mental health discussions in real-time from various subreddits.</p>
     </div>
     """, unsafe_allow_html=True)
@@ -641,7 +659,7 @@ def reddit_monitoring_tab():
     # Subreddit configuration
     st.markdown("""
     <div class="info-card">
-        <h4>📱 Subreddit Settings</h4>
+        <div style="color: #667eea; font-size: 1.3rem; font-weight: 600; margin-bottom: 10px;">📱 Subreddit Settings</div>
         <p>Configure which subreddit to monitor and analysis parameters.</p>
     </div>
     """, unsafe_allow_html=True)
@@ -737,7 +755,7 @@ def reddit_monitoring_tab():
             with col1:
                 st.markdown(f'''
                 <div class="metric-card">
-                    <h3>{len(posts)}</h3>
+                    <div style="font-size: 2.5em; margin: 0; font-weight: 700; color: white !important;">{len(posts)}</div>
                     <p>Posts Analyzed</p>
                 </div>
                 ''', unsafe_allow_html=True)
@@ -745,7 +763,7 @@ def reddit_monitoring_tab():
             with col2:
                 st.markdown(f'''
                 <div class="metric-card">
-                    <h3>{risk_count}</h3>
+                    <div style="font-size: 2.5em; margin: 0; font-weight: 700; color: white !important;">{risk_count}</div>
                     <p>Risk Detected</p>
                 </div>
                 ''', unsafe_allow_html=True)
@@ -753,7 +771,7 @@ def reddit_monitoring_tab():
             with col3:
                 st.markdown(f'''
                 <div class="metric-card">
-                    <h3>{normal_count}</h3>
+                    <div style="font-size: 2.5em; margin: 0; font-weight: 700; color: white !important;">{normal_count}</div>
                     <p>Normal Posts</p>
                 </div>
                 ''', unsafe_allow_html=True)
@@ -767,7 +785,7 @@ def main():
     st.markdown('''
     <div style="text-align: center; margin-bottom: 40px;">
         <div style="font-size: 4rem; margin-bottom: 10px;">🧠</div>
-        <h1 class="main-header" style="margin-top: 0;">MindTrack</h1>
+        <div class="main-header" style="margin-top: 0;">MindTrack</div>
         <p class="subtitle">AI-Powered Mental Health Sentiment Analyzer</p>
         <div style="width: 100px; height: 4px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 20px auto; border-radius: 2px;"></div>
     </div>
@@ -785,9 +803,9 @@ def main():
     with tab3:
         st.markdown('''
         <div style="text-align: center; margin-bottom: 30px;">
-            <h2 style="font-size: 2.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px;">
+            <div style="font-size: 2.5rem; color: #e0e6ed; margin-bottom: 10px; font-weight: 600;">
                 ℹ️ About MindTrack
-            </h2>
+            </div>
             <p style="font-size: 1.2rem; color: #a0aec0; margin: 0;">
                 Advanced AI-powered mental health sentiment analysis
             </p>
@@ -797,23 +815,23 @@ def main():
         # Key Features
         st.markdown("""
         <div class="info-card">
-            <h3 style="color: #667eea; margin-bottom: 20px;">🚀 Key Features</h3>
+            <div style="color: #667eea; margin-bottom: 20px; font-size: 1.5rem; font-weight: 600;">🚀 Key Features</div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
-                <div style="padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
-                    <h4 style="color: white !important;">🤖 Advanced AI Model</h4>
-                    <p style="margin: 0; opacity: 0.9; color: rgba(255,255,255,0.9) !important;">Fine-tuned DistilBERT for mental health sentiment analysis</p>
+                <div style="padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px;">
+                    <div style="color: #ffffff !important; font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">🤖 Advanced AI Model</div>
+                    <p style="margin: 0; color: #ffffff !important; font-weight: 600; text-shadow: 1px 1px 3px rgba(0,0,0,0.7); font-size: 1rem;">Fine-tuned DistilBERT for mental health sentiment analysis</p>
                 </div>
-                <div style="padding: 15px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; color: white;">
-                    <h4 style="color: white !important;">🔍 Explainable AI</h4>
-                    <p style="margin: 0; opacity: 0.9; color: rgba(255,255,255,0.9) !important;">LIME explanations show which words influenced predictions</p>
+                <div style="padding: 15px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px;">
+                    <div style="color: #ffffff !important; font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">🔍 Explainable AI</div>
+                    <p style="margin: 0; color: #ffffff !important; font-weight: 600; text-shadow: 1px 1px 3px rgba(0,0,0,0.7); font-size: 1rem;">LIME explanations show which words influenced predictions</p>
                 </div>
-                <div style="padding: 15px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 12px; color: white;">
-                    <h4 style="color: white !important;">📱 Reddit Integration</h4>
-                    <p style="margin: 0; opacity: 0.9; color: rgba(255,255,255,0.9) !important;">Monitor mental health subreddits in real-time</p>
+                <div style="padding: 15px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 12px;">
+                    <div style="color: #ffffff !important; font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">📱 Reddit Integration</div>
+                    <p style="margin: 0; color: #ffffff !important; font-weight: 600; text-shadow: 1px 1px 3px rgba(0,0,0,0.7); font-size: 1rem;">Monitor mental health subreddits in real-time</p>
                 </div>
-                <div style="padding: 15px; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border-radius: 12px; color: white;">
-                    <h4 style="color: white !important;">⚡ High Accuracy</h4>
-                    <p style="margin: 0; opacity: 0.9; color: rgba(255,255,255,0.9) !important;">97%+ accuracy on mental health text classification</p>
+                <div style="padding: 15px; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border-radius: 12px;">
+                    <div style="color: #ffffff !important; font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">⚡ High Accuracy</div>
+                    <p style="margin: 0; color: #ffffff !important; font-weight: 600; text-shadow: 1px 1px 3px rgba(0,0,0,0.7); font-size: 1rem;">97%+ accuracy on mental health text classification</p>
                 </div>
             </div>
         </div>
@@ -822,26 +840,26 @@ def main():
         # How to Use
         st.markdown("""
         <div class="info-card">
-            <h3 style="color: #667eea; margin-bottom: 20px;">📖 How to Use</h3>
+            <div style="color: #667eea; margin-bottom: 20px; font-size: 1.5rem; font-weight: 600;">📖 How to Use</div>
             <div style="display: flex; flex-direction: column; gap: 15px;">
                 <div style="display: flex; align-items: center; padding: 15px; background: rgba(102, 126, 234, 0.2); border-radius: 12px; border-left: 4px solid #667eea;">
                     <span style="font-size: 2em; margin-right: 15px;">📝</span>
                     <div>
-                        <h4 style="margin: 0; color: #e0e6ed !important;">Text Analysis</h4>
+                        <div style="margin: 0; color: #e0e6ed !important; font-size: 1.1rem; font-weight: 600;">Text Analysis</div>
                         <p style="margin: 5px 0 0 0; color: #a0aec0 !important;">Enter any text to get instant mental health sentiment analysis</p>
                     </div>
                 </div>
                 <div style="display: flex; align-items: center; padding: 15px; background: rgba(245, 87, 108, 0.2); border-radius: 12px; border-left: 4px solid #f5576c;">
                     <span style="font-size: 2em; margin-right: 15px;">📱</span>
                     <div>
-                        <h4 style="margin: 0; color: #e0e6ed !important;">Reddit Monitor</h4>
+                        <div style="margin: 0; color: #e0e6ed !important; font-size: 1.1rem; font-weight: 600;">Reddit Monitor</div>
                         <p style="margin: 5px 0 0 0; color: #a0aec0 !important;">Analyze posts from mental health subreddits in real-time</p>
                     </div>
                 </div>
                 <div style="display: flex; align-items: center; padding: 15px; background: rgba(79, 172, 254, 0.2); border-radius: 12px; border-left: 4px solid #4facfe;">
                     <span style="font-size: 2em; margin-right: 15px;">🔍</span>
                     <div>
-                        <h4 style="margin: 0; color: #e0e6ed !important;">View Explanations</h4>
+                        <div style="margin: 0; color: #e0e6ed !important; font-size: 1.1rem; font-weight: 600;">View Explanations</div>
                         <p style="margin: 5px 0 0 0; color: #a0aec0 !important;">Understand why the AI made its prediction with detailed analysis</p>
                     </div>
                 </div>
@@ -853,7 +871,7 @@ def main():
         st.markdown("""
         <div style="background: linear-gradient(135deg, #2d1b69 0%, #11101d 100%); padding: 25px; border-radius: 20px; margin: 25px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.4); border: 2px solid #fc8181;">
             <div style="text-align: center; margin-bottom: 20px;">
-                <h3 style="color: #fc8181 !important; margin: 0;">⚠️ Important Disclaimer</h3>
+                <div style="color: #fc8181 !important; margin: 0; font-size: 1.5rem; font-weight: 600;">⚠️ Important Disclaimer</div>
             </div>
             <p style="color: #e0e6ed !important; font-size: 1.1em; line-height: 1.6; margin: 0; text-align: center;">
                 This tool is designed to <strong style="color: #fc8181;">assist</strong> in identifying potential mental health concerns but should 
@@ -866,18 +884,18 @@ def main():
         # Crisis Resources
         st.markdown("""
         <div class="info-card">
-            <h3 style="color: #fc8181; margin-bottom: 20px;">🆘 Crisis Resources</h3>
+            <div style="color: #fc8181; margin-bottom: 20px; font-size: 1.5rem; font-weight: 600;">🆘 Crisis Resources</div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
                 <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #2d1b69 0%, #11101d 100%); border-radius: 15px; border: 2px solid #fc8181;">
-                    <h4 style="margin: 0 0 10px 0; color: #e0e6ed !important;">📞 US Crisis Hotline</h4>
+                    <div style="margin: 0 0 10px 0; color: #e0e6ed !important; font-size: 1.2rem; font-weight: 600;">📞 US Crisis Hotline</div>
                     <p style="margin: 0; font-size: 1.3em; font-weight: bold; color: #fc8181 !important;">988</p>
                 </div>
                 <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%); border-radius: 15px; border: 2px solid #68d391;">
-                    <h4 style="margin: 0 0 10px 0; color: #e0e6ed !important;">💬 Crisis Text Line</h4>
+                    <div style="margin: 0 0 10px 0; color: #e0e6ed !important; font-size: 1.2rem; font-weight: 600;">💬 Crisis Text Line</div>
                     <p style="margin: 0; font-size: 1.1em; font-weight: bold; color: #68d391 !important;">Text HOME to 741741</p>
                 </div>
                 <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #2d2a1b 0%, #1d1b11 100%); border-radius: 15px; border: 2px solid #f6ad55;">
-                    <h4 style="margin: 0 0 10px 0; color: #e0e6ed !important;">🌍 International</h4>
+                    <div style="margin: 0 0 10px 0; color: #e0e6ed !important; font-size: 1.2rem; font-weight: 600;">🌍 International</div>
                     <p style="margin: 0; font-size: 0.95em; color: #f6ad55 !important;">IASP Crisis Centers</p>
                 </div>
             </div>
