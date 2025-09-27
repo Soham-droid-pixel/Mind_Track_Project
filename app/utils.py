@@ -14,41 +14,35 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Model configuration - Hugging Face Hub
+MODEL_ID = "techhy/mindtrack-mental-health-analyzer"  # Hosted model on HF Hub
+
 # Global variables to store model and tokenizer
 _model = None
 _tokenizer = None
 
-def load_model_and_tokenizer(model_path="./saved_model"):
+def load_model_and_tokenizer(model_id=None):
     """
-    Load the saved model and tokenizer from the specified path.
+    Load the model and tokenizer from Hugging Face Hub.
     
     Args:
-        model_path (str): Path to the saved model directory
+        model_id (str): Hugging Face model ID (uses default if None)
         
     Returns:
         tuple: Loaded model and tokenizer
     """
     global _model, _tokenizer
     
+    # Use provided model_id or default
+    if model_id is None:
+        model_id = MODEL_ID
+    
     try:
-        logger.info(f"Loading model from {model_path}")
+        logger.info(f"Loading model from Hugging Face Hub: {model_id}")
         
-        # Check if model path exists
-        if not os.path.exists(model_path):
-            # Try alternative paths
-            alternative_paths = ["./model/saved_model", "./model/results"]
-            for alt_path in alternative_paths:
-                if os.path.exists(alt_path):
-                    logger.info(f"Model not found at {model_path}, trying {alt_path}")
-                    model_path = alt_path
-                    break
-            else:
-                logger.warning(f"Model path {model_path} does not exist. Using fallback model.")
-                return load_fallback_model()
-        
-        # Load tokenizer and model
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
-        model = AutoModelForSequenceClassification.from_pretrained(model_path)
+        # Load tokenizer and model from Hugging Face Hub
+        tokenizer = AutoTokenizer.from_pretrained(model_id)
+        model = AutoModelForSequenceClassification.from_pretrained(model_id)
         
         # Set model to evaluation mode
         model.eval()

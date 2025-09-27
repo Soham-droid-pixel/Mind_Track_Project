@@ -467,7 +467,7 @@ if 'lime_explainer' not in st.session_state:
 def load_model_cached():
     """Load model with Streamlit caching for better performance."""
     try:
-        model, tokenizer = load_model_and_tokenizer('./saved_model')
+        model, tokenizer = load_model_and_tokenizer()  # No path needed - uses HF Hub
         return model, tokenizer
     except Exception as e:
         st.error(f"Failed to load model: {str(e)}")
